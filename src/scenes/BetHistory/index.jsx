@@ -14,8 +14,7 @@ import {
 } from "@mui/icons-material";
 
 const BetHistory = () => {
-  // Sample bet data
-  const [bets] = useState([]);
+  const [bets] = useState([]); // Replace with real data or API fetch
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -30,18 +29,14 @@ const BetHistory = () => {
     winRate: 0
   });
 
-  // Define getFilteredBets with useCallback
   const getFilteredBets = useCallback(() => {
     return bets.filter(bet => {
-      // Search filter
       const matchesSearch = 
         bet.player.toLowerCase().includes(searchTerm.toLowerCase()) ||
         bet.flightNumber.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Status filter
       const matchesStatus = statusFilter === "all" || bet.status === statusFilter;
-      
-      // Date filter
+
       let matchesDate = true;
       if (dateFilter === "today") {
         const today = new Date().toISOString().split('T')[0];
@@ -53,42 +48,27 @@ const BetHistory = () => {
         const oneWeekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
         matchesDate = bet.date >= oneWeekAgo;
       }
-      
+
       return matchesSearch && matchesStatus && matchesDate;
     }).sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
+      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
       return 0;
     });
   }, [bets, searchTerm, statusFilter, dateFilter, sortConfig]);
 
-  // Calculate statistics (if needed, you can use getFilteredBets here)
   useEffect(() => {
     getFilteredBets();
   }, [getFilteredBets]);
 
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleStatusFilterChange = (event) => {
-    setStatusFilter(event.target.value);
-  };
-
-  const handleDateFilterChange = (event) => {
-    setDateFilter(event.target.value);
-  };
-
+  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handleStatusFilterChange = (e) => setStatusFilter(e.target.value);
+  const handleDateFilterChange = (e) => setDateFilter(e.target.value);
   const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
-    setSortConfig({ key, direction });
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
   const handleViewDetails = (bet) => {
@@ -96,13 +76,10 @@ const BetHistory = () => {
     setOpenDialog(true);
   };
 
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
+  const handleCloseDialog = () => setOpenDialog(false);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
-  };
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
 
   const filteredBets = getFilteredBets();
 
@@ -114,43 +91,26 @@ const BetHistory = () => {
       <Typography variant="h5" color="#555" sx={{ mb: "20px" }}>
         Track and analyze all betting activity
       </Typography>
-      
+
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Bets</Typography>
-              <Typography variant="h3">{stats.totalBets}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Wagered</Typography>
-              <Typography variant="h3">{formatCurrency(stats.totalWagered)}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Payout</Typography>
-              <Typography variant="h3">{formatCurrency(stats.totalPayout)}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Win Rate</Typography>
-              <Typography variant="h3">{stats.winRate}%</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {[
+          { label: 'Total Bets', value: stats.totalBets },
+          { label: 'Total Wagered', value: formatCurrency(stats.totalWagered) },
+          { label: 'Total Payout', value: formatCurrency(stats.totalPayout) },
+          { label: 'Win Rate', value: `${stats.winRate}%` },
+        ].map((stat, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <Card sx={{ bgcolor: "#f5f5f5" }}>
+              <CardContent>
+                <Typography variant="h6" color="text.secondary">{stat.label}</Typography>
+                <Typography variant="h3">{stat.value}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
-      
+
       {/* Filters */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={5}>
@@ -204,7 +164,7 @@ const BetHistory = () => {
           </FormControl>
         </Grid>
       </Grid>
-      
+
       {/* Bet History Table */}
       <TableContainer component={Paper}>
         <Table>
@@ -266,18 +226,14 @@ const BetHistory = () => {
                   <TableCell>{bet.date}</TableCell>
                   <TableCell>
                     <Chip 
-                      label={bet.status === "won" ? "Won" : "Lost"} 
-                      color={bet.status === "won" ? "success" : "error"} 
-                      size="small" 
+                      label={bet.status}
+                      color={bet.status === 'won' ? 'success' : 'error'}
+                      size="small"
                     />
                   </TableCell>
                   <TableCell align="center">
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      onClick={() => handleViewDetails(bet)}
-                    >
-                      Details
+                    <Button variant="outlined" size="small" onClick={() => handleViewDetails(bet)}>
+                      View
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -285,9 +241,7 @@ const BetHistory = () => {
             ) : (
               <TableRow>
                 <TableCell colSpan={8} align="center">
-                  <Typography variant="body1" sx={{ py: 2 }}>
-                    No bets found matching your filters
-                  </Typography>
+                  No bets found.
                 </TableCell>
               </TableRow>
             )}
@@ -295,76 +249,27 @@ const BetHistory = () => {
         </Table>
       </TableContainer>
 
-      {/* Bet Details Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        {selectedBet && (
-          <>
-            <DialogTitle>
-              Bet Details - {selectedBet.flightNumber}
-            </DialogTitle>
-            <DialogContent dividers>
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Player:</Typography>
-                  <Typography variant="body1">{selectedBet.player}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Flight Number:</Typography>
-                  <Typography variant="body1">{selectedBet.flightNumber}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Bet Amount:</Typography>
-                  <Typography variant="body1">{formatCurrency(selectedBet.amount)}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Multiplier:</Typography>
-                  <Typography variant="body1">{selectedBet.multiplier}x</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Payout:</Typography>
-                  <Typography variant="body1" fontWeight="bold">
-                    {selectedBet.payout > 0 ? formatCurrency(selectedBet.payout) : "-"}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Status:</Typography>
-                  <Chip 
-                    label={selectedBet.status === "won" ? "Won" : "Lost"} 
-                    color={selectedBet.status === "won" ? "success" : "error"} 
-                    size="small" 
-                  />
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Date:</Typography>
-                  <Typography variant="body1">{selectedBet.date}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Profit/Loss:</Typography>
-                  <Typography 
-                    variant="body1" 
-                    color={selectedBet.payout > selectedBet.amount ? "success.main" : "error.main"}
-                    fontWeight="bold"
-                  >
-                    {formatCurrency(selectedBet.payout - selectedBet.amount)}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Close</Button>
-              <Button 
-                variant="contained" 
-                color="primary"
-                onClick={() => {
-                  // Add action for contacting player
-                  handleCloseDialog();
-                }}
-              >
-                Contact Player
-              </Button>
-            </DialogActions>
-          </>
-        )}
+      {/* Dialog for bet details */}
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
+        <DialogTitle>Bet Details</DialogTitle>
+        <DialogContent dividers>
+          {selectedBet ? (
+            <Box>
+              <Typography><strong>Player:</strong> {selectedBet.player}</Typography>
+              <Typography><strong>Flight Number:</strong> {selectedBet.flightNumber}</Typography>
+              <Typography><strong>Amount:</strong> {formatCurrency(selectedBet.amount)}</Typography>
+              <Typography><strong>Multiplier:</strong> {selectedBet.multiplier}x</Typography>
+              <Typography><strong>Payout:</strong> {formatCurrency(selectedBet.payout)}</Typography>
+              <Typography><strong>Date:</strong> {selectedBet.date}</Typography>
+              <Typography><strong>Status:</strong> {selectedBet.status}</Typography>
+            </Box>
+          ) : (
+            <Typography>No bet selected.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

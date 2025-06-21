@@ -5,14 +5,63 @@ import {
   MenuItem, Grid, Card, CardContent, Chip
 } from "@mui/material";
 import { Search as SearchIcon, Flight as FlightIcon } from "@mui/icons-material";
-import { apiFetch } from '../../service/api';
+
+// Dummy Data
+const dummyFlights = [
+  {
+    id: 1,
+    flightNumber: "AV101",
+    multiplier: "1.8",
+    timestamp: "2025-06-21 10:15:00",
+    duration: "30s",
+    players: 12,
+    startTime: "2025-06-21T10:15:00Z",
+    flightPlan: true
+  },
+  {
+    id: 2,
+    flightNumber: "AV102",
+    multiplier: "2.5",
+    timestamp: "2025-06-20 11:00:00",
+    duration: "45s",
+    players: 18,
+    startTime: "2025-06-20T11:00:00Z",
+    flightPlan: true
+  },
+  {
+    id: 3,
+    flightNumber: "AV103",
+    multiplier: "4.3",
+    timestamp: "2025-06-18 14:45:00",
+    duration: "60s",
+    players: 24,
+    startTime: "2025-06-18T14:45:00Z",
+    flightPlan: true
+  },
+  {
+    id: 4,
+    flightNumber: "AV104",
+    multiplier: "3.0",
+    timestamp: "2025-06-17 16:30:00",
+    duration: "40s",
+    players: 20,
+    startTime: "2025-06-17T16:30:00Z",
+    flightPlan: true
+  },
+  {
+    id: 5,
+    flightNumber: "AV105",
+    multiplier: "1.2",
+    timestamp: "2025-06-21 09:00:00",
+    duration: "25s",
+    players: 10,
+    startTime: "2025-06-21T09:00:00Z",
+    flightPlan: true
+  }
+];
 
 const FlightHistory = () => {
-  // Fetch flight data from backend
   const [flights, setFlights] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [multiplierFilter, setMultiplierFilter] = useState("all");
@@ -24,25 +73,15 @@ const FlightHistory = () => {
   });
 
   useEffect(() => {
-    setLoading(true);
-    apiFetch('/flights')
-      .then(data => {
-        // Only keep flights that are linked to a flight plan
-        setFlights(data.filter(flight => flight.flightPlan));
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
+    // Simulate fetching data
+    const filtered = dummyFlights.filter(flight => flight.flightPlan);
+    setFlights(filtered);
   }, []);
 
-  // Wrap the filter function in useCallback to prevent unnecessary recalculations
   const getFilteredFlights = useCallback(() => {
     return flights.filter(flight => {
-      // Search filter
       const matchesSearch = (flight.flightNumber || "").toLowerCase().includes(searchTerm.toLowerCase());
-      // Date filter
+      
       let matchesDate = true;
       if (dateFilter === "today") {
         const today = new Date().toISOString().split('T')[0];
@@ -54,20 +93,21 @@ const FlightHistory = () => {
         const oneWeekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
         matchesDate = flight.startTime >= oneWeekAgo;
       }
-      // Multiplier filter (if you have a multiplier field)
+
       let matchesMultiplier = true;
+      const multiplier = parseFloat(flight.multiplier || 0);
       if (multiplierFilter === "low") {
-        matchesMultiplier = parseFloat(flight.multiplier || 0) < 2.0;
+        matchesMultiplier = multiplier < 2.0;
       } else if (multiplierFilter === "medium") {
-        matchesMultiplier = parseFloat(flight.multiplier || 0) >= 2.0 && parseFloat(flight.multiplier || 0) < 4.0;
+        matchesMultiplier = multiplier >= 2.0 && multiplier < 4.0;
       } else if (multiplierFilter === "high") {
-        matchesMultiplier = parseFloat(flight.multiplier || 0) >= 4.0;
+        matchesMultiplier = multiplier >= 4.0;
       }
+
       return matchesSearch && matchesDate && matchesMultiplier;
     });
   }, [flights, searchTerm, dateFilter, multiplierFilter]);
 
-  // Calculate statistics
   useEffect(() => {
     const filteredFlights = getFilteredFlights();
     const totalFlights = filteredFlights.length;
@@ -107,43 +147,26 @@ const FlightHistory = () => {
       <Typography variant="h5" color="#555" sx={{ mb: "20px" }}>
         View historical Betika Aviator flights
       </Typography>
-      
+
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Flights</Typography>
-              <Typography variant="h3">{stats.totalFlights}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Avg. Multiplier</Typography>
-              <Typography variant="h3">{stats.averageMultiplier}x</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Highest Multiplier</Typography>
-              <Typography variant="h3">{stats.highestMultiplier}x</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
-            <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Players</Typography>
-              <Typography variant="h3">{stats.totalPlayers}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {[
+          { label: "Total Flights", value: stats.totalFlights },
+          { label: "Avg. Multiplier", value: `${stats.averageMultiplier}x` },
+          { label: "Highest Multiplier", value: `${stats.highestMultiplier}x` },
+          { label: "Total Players", value: stats.totalPlayers }
+        ].map(({ label, value }) => (
+          <Grid item xs={12} sm={6} md={3} key={label}>
+            <Card sx={{ bgcolor: "#f5f5f5" }}>
+              <CardContent>
+                <Typography variant="h6" color="text.secondary">{label}</Typography>
+                <Typography variant="h3">{value}</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
-      
+
       {/* Filters */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={12} md={4}>
@@ -191,7 +214,7 @@ const FlightHistory = () => {
           </TextField>
         </Grid>
       </Grid>
-      
+
       {/* Flight History Table */}
       <TableContainer component={Paper}>
         <Table>
