@@ -19,24 +19,27 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* ✅ Pass onSuccessRedirect so login goes to dashboard */}
-        <Route path="/login" element={<Login signupUrl="/signup" onSuccessRedirect="/dashboard" />} />
-        <Route path="/signup" element={<Signup />} />
-        
-        <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/bets-history" element={<BetHistory />} />
-          <Route path="/players" element={<Players />} />
-          <Route path="/payouts" element={<Payout />} />
-          <Route path="/flighthistory" element={<FlightHistory />} />
-          <Route path="/flightplans" element={<FlightPlans />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
+  <Routes>
+    {/* Public Routes */}
+    <Route path="/login" element={<Login signupUrl="/signup" onSuccessRedirect="/dashboard" />} />
+    <Route path="/signup" element={<Signup />} />
 
-        <Route path="/" element={<Navigate to="/login" />} />
-      </Routes>
-    </Router>
+    {/* Protected Routes */}
+    <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/bets-history" element={<BetHistory />} />
+      <Route path="/players" element={<Players />} />
+      <Route path="/payouts" element={<Payout />} />
+      <Route path="/flighthistory" element={<FlightHistory />} />
+      <Route path="/flightplans" element={<FlightPlans />} />
+      <Route path="/settings" element={<Settings />} />
+    </Route>
+
+    {/* Redirect root to login */}
+    <Route path="/" element={<Navigate to="/login" />} />
+  </Routes>
+</Router>
+
   );
 }
 
