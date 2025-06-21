@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   TextField,
@@ -13,9 +12,9 @@ import {
   DialogTitle,
   DialogActions
 } from '@mui/material';
-import { apiFetch, setToken } from '../../service/api';
+import { useNavigate } from 'react-router-dom';
 
-const Login = ({ loginPath, onSuccessRedirect, forgotPasswordUrl, signupUrl }) => {
+const Login = ({ onSuccessRedirect = '/', forgotPasswordUrl, signupUrl }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,117 +22,52 @@ const Login = ({ loginPath, onSuccessRedirect, forgotPasswordUrl, signupUrl }) =
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      const { token } = await apiFetch(loginPath, {
-        method: 'POST',
-        body: JSON.stringify({ username, password })
-      });
-      setToken(token);
-      setOpenSuccessDialog(true);
-    } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
-      console.error('Login error:', err);
-    } finally {
+    setTimeout(() => {
+      const savedUser = JSON.parse(localStorage.getItem('mockUser'));
+      if (savedUser && savedUser.username === username && savedUser.password === password) {
+        setOpenSuccessDialog(true);
+      } else {
+        setError('Invalid username or password.');
+      }
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const handleDialogClose = () => {
     setOpenSuccessDialog(false);
-    if (onSuccessRedirect) {
-      navigate(onSuccessRedirect);
-    }
+    navigate(onSuccessRedirect);
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
-        padding: 2
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          padding: 4,
-          width: '100%',
-          maxWidth: 400,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2
-        }}
-      >
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Admin Login
-        </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f5f5f5', padding: 2 }}>
+      <Paper elevation={3} sx={{ padding: 4, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="h4" align="center" gutterBottom>Admin Login</Typography>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          <Alert severity="error" onClose={() => setError('')}>
             {error}
           </Alert>
         )}
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
-          }}
-        >
-          <TextField
-            label="Username"
-            variant="outlined"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            fullWidth
-            autoComplete="username"
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            variant="outlined"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            autoComplete="current-password"
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isLoading}
-            sx={{ mt: 2, py: 1.5 }}
-            endIcon={isLoading ? <CircularProgress size={24} /> : null}
-          >
-            {isLoading ? 'Logging in...' : 'Login'}
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label="Username" value={username} onChange={(e) => setUsername(e.target.value)} required fullWidth />
+          <TextField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required fullWidth />
+          <Button type="submit" variant="contained" disabled={isLoading} sx={{ mt: 2 }}>
+            {isLoading ? <CircularProgress size={24} /> : 'Login'}
           </Button>
         </Box>
 
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
           {forgotPasswordUrl && (
-            <Link href={forgotPasswordUrl} underline="hover" color="inherit">
-              Forgot Password?
-            </Link>
+            <Link href={forgotPasswordUrl} underline="hover">Forgot Password?</Link>
           )}
           {signupUrl && (
-            <Link href={signupUrl} underline="hover" color="inherit">
-              Create Account
-            </Link>
+            <Link href={signupUrl} underline="hover">Create Account</Link>
           )}
         </Box>
       </Paper>
@@ -141,9 +75,7 @@ const Login = ({ loginPath, onSuccessRedirect, forgotPasswordUrl, signupUrl }) =
       <Dialog open={openSuccessDialog} onClose={handleDialogClose}>
         <DialogTitle>Login Successful!</DialogTitle>
         <DialogActions>
-          <Button onClick={handleDialogClose} autoFocus>
-            OK
-          </Button>
+          <Button onClick={handleDialogClose} autoFocus>OK</Button>
         </DialogActions>
       </Dialog>
     </Box>

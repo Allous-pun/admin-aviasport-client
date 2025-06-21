@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Box,
   TextField,
@@ -13,7 +12,7 @@ import {
   DialogTitle,
   DialogActions
 } from '@mui/material';
-import { apiFetch } from '../../service/api';
+import { useNavigate } from 'react-router-dom';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
@@ -23,23 +22,22 @@ const Signup = () => {
   const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      await apiFetch('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({ username, password })
-      });
-      setOpenSuccessDialog(true);
-    } catch (err) {
-      setError(err.message);
-      console.error('Signup error:', err);
-    } finally {
+    // Simulate success after delay
+    setTimeout(() => {
+      if (username && password) {
+        // You can store it in localStorage or just show dialog
+        localStorage.setItem('mockUser', JSON.stringify({ username, password }));
+        setOpenSuccessDialog(true);
+      } else {
+        setError('Username and password are required');
+      }
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   const handleDialogClose = () => {
@@ -48,110 +46,34 @@ const Signup = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5',
-        padding: 2
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          padding: 4,
-          width: '100%',
-          maxWidth: 400,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 2
-        }}
-      >
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Create Admin Account
-        </Typography>
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f5f5f5', padding: 2 }}>
+      <Paper elevation={3} sx={{ padding: 4, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="h4" align="center" gutterBottom>Create Admin Account</Typography>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          <Alert severity="error" onClose={() => setError('')}>
             {error}
           </Alert>
         )}
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
-          }}
-        >
-          <TextField
-            label="Username"
-            variant="outlined"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            fullWidth
-            autoComplete="username"
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            variant="outlined"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            fullWidth
-            autoComplete="new-password"
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isLoading}
-            sx={{
-              mt: 2,
-              py: 1.5,
-              backgroundColor: '#1976d2',
-              '&:hover': {
-                backgroundColor: '#1565c0'
-              }
-            }}
-            endIcon={isLoading ? <CircularProgress size={24} color="inherit" /> : null}
-          >
-            {isLoading ? 'Registering...' : 'Sign Up'}
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField label="Username" value={username} onChange={(e) => setUsername(e.target.value)} required fullWidth />
+          <TextField label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required fullWidth />
+          <Button type="submit" variant="contained" disabled={isLoading} sx={{ mt: 2 }}>
+            {isLoading ? <CircularProgress size={24} /> : 'Sign Up'}
           </Button>
         </Box>
 
         <Typography variant="body2" align="center" sx={{ mt: 2 }}>
           Already have an account?{' '}
-          <Link
-            href="/login"
-            underline="hover"
-            sx={{
-              color: 'primary.main',
-              '&:hover': {
-                color: 'primary.dark'
-              }
-            }}
-          >
-            Login here
-          </Link>
+          <Link href="/login" underline="hover">Login here</Link>
         </Typography>
       </Paper>
 
-      {/* Success Dialog */}
       <Dialog open={openSuccessDialog} onClose={handleDialogClose}>
         <DialogTitle>Registration Successful!</DialogTitle>
         <DialogActions>
-          <Button onClick={handleDialogClose} autoFocus>
-            OK
-          </Button>
+          <Button onClick={handleDialogClose} autoFocus>OK</Button>
         </DialogActions>
       </Dialog>
     </Box>
