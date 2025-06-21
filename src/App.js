@@ -20,8 +20,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* ✅ Added signupUrl prop to enable the "Create Account" link */}
-        <Route path="/login" element={<Login signupUrl="/signup" />} />
+        {/* ✅ Pass onSuccessRedirect so login goes to dashboard */}
+        <Route path="/login" element={<Login signupUrl="/signup" onSuccessRedirect="/dashboard" />} />
         <Route path="/signup" element={<Signup />} />
         
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
