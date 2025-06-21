@@ -20,8 +20,10 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        {/* ✅ Added signupUrl prop to enable the "Create Account" link */}
+        <Route path="/login" element={<Login signupUrl="/signup" />} />
         <Route path="/signup" element={<Signup />} />
+        
         <Route element={<PrivateRoute><Layout /></PrivateRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/bets-history" element={<BetHistory />} />
@@ -31,6 +33,7 @@ function App() {
           <Route path="/flightplans" element={<FlightPlans />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
+
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>
