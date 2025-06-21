@@ -1,230 +1,178 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Box, Typography, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Paper, TextField, InputAdornment,
-  MenuItem, Grid, Card, CardContent, Button,
-  Dialog, DialogTitle, DialogContent, DialogActions, Select,
-  FormControl, InputLabel, IconButton, Switch, FormControlLabel
+  Box,
+  Grid,
+  Typography,
+  TextField,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Switch,
+  FormControlLabel,
+  Card,
+  CardContent,
 } from "@mui/material";
-import {
-  Search as SearchIcon,
-  ArrowUpward as ArrowUpwardIcon,
-  ArrowDownward as ArrowDownwardIcon,
-  Payment as PaymentIcon,
-  CheckCircle as CheckCircleIcon,
-  Pending as PendingIcon
-} from "@mui/icons-material";
-import { apiFetch } from '../../service/api';
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
+
+import { usePayouts } from "@/hooks/payouts"; // Ensure this returns the correct data shape
 
 const Payout = () => {
-  // Fetch payout data from backend
-  const [payouts, setPayouts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { payouts } = usePayouts();
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const [sortConfig, setSortConfig] = useState({ key: "date", direction: "desc" });
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [showOnlyPending, setShowOnlyPending] = useState(false);
-  const [stats, setStats] = useState({
-    totalPayouts: 0,
-    totalAmount: 0,
-    completedPayouts: 0,
-    pendingPayouts: 0
-  });
-
-  useEffect(() => {
-    setLoading(true);
-    apiFetch('/payouts')
-      .then(data => {
-        setPayouts(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
-
-  // Wrap getFilteredPayouts in useCallback
-  const getFilteredPayouts = useCallback(() => {
-    let filtered = payouts.filter(payout => {
-      // Search filter
-      const matchesSearch = (payout.player?.username || payout.player || "").toLowerCase().includes(searchTerm.toLowerCase());
-      // Status filter
-      const matchesStatus = statusFilter === "all" || payout.status === statusFilter;
-      // Method filter
-      const matchesMethod = methodFilter === "all" || payout.method === methodFilter;
-      // Date filter
-      let matchesDate = true;
-      if (dateFilter === "today") {
-        const today = new Date().toISOString().split('T')[0];
-        matchesDate = payout.createdAt?.startsWith(today);
-      } else if (dateFilter === "yesterday") {
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        matchesDate = payout.createdAt?.startsWith(yesterday);
-      } else if (dateFilter === "thisWeek") {
-        const oneWeekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
-        matchesDate = payout.createdAt >= oneWeekAgo;
-      }
-      // Pending toggle filter
-      const matchesPendingToggle = !showOnlyPending || payout.status === "pending";
-      return matchesSearch && matchesStatus && matchesMethod && matchesDate && matchesPendingToggle;
-    });
-    // Sorting
-    return filtered.sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? -1 : 1;
-      }
-      if (a[sortConfig.key] > b[sortConfig.key]) {
-        return sortConfig.direction === 'asc' ? 1 : -1;
-      }
-      return 0;
-    });
-  }, [payouts, searchTerm, statusFilter, methodFilter, dateFilter, showOnlyPending, sortConfig]);
-
-  useEffect(() => {
-    getFilteredPayouts();
-  }, [getFilteredPayouts]);
-
-  // Calculate statistics
-  useEffect(() => {
-    const filteredPayouts = getFilteredPayouts();
-    const totalPayouts = filteredPayouts.length;
-    const totalAmount = filteredPayouts.reduce((sum, payout) => sum + (payout.amount || 0), 0);
-    const completedPayouts = filteredPayouts.filter(p => p.status === "completed").length;
-    const pendingPayouts = filteredPayouts.filter(p => p.status === "pending").length;
-    setStats({
-      totalPayouts,
-      totalAmount,
-      completedPayouts,
-      pendingPayouts
-    });
-  }, [payouts, searchTerm, statusFilter, methodFilter, dateFilter, showOnlyPending, getFilteredPayouts]);
-
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleStatusFilterChange = (event) => {
-    setStatusFilter(event.target.value);
-  };
-
-  const handleMethodFilterChange = (event) => {
-    setMethodFilter(event.target.value);
-  };
-
-  const handleDateFilterChange = (event) => {
-    setDateFilter(event.target.value);
-  };
 
   const handleSort = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
+
+  const filteredPayouts = payouts
+    .filter((p) =>
+      p.player?.username?.toLowerCase().includes(search.toLowerCase()) ||
+      p.method?.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((p) => (statusFilter === "all" ? true : p.status === statusFilter))
+    .filter((p) => (methodFilter === "all" ? true : p.method === methodFilter))
+    .filter((p) => {
+      if (dateFilter === "today") {
+        const today = new Date().toISOString().slice(0, 10);
+        return p.createdAt.slice(0, 10) === today;
+      }
+      if (dateFilter === "yesterday") {
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        return p.createdAt.slice(0, 10) === yesterday;
+      }
+      if (dateFilter === "thisWeek") {
+        const now = new Date();
+        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        return new Date(p.createdAt) >= weekAgo;
+      }
+      return true;
+    })
+    .filter((p) => (showOnlyPending ? p.status === "pending" : true))
+    .sort((a, b) => {
+      if (!sortConfig.key) return 0;
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircleIcon color="success" />;
+      case "failed":
+        return <CancelIcon color="error" />;
+      case "pending":
+        return <HourglassBottomIcon color="warning" />;
+      default:
+        return null;
+    }
+  };
+
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(amount);
 
   const handleViewDetails = (payout) => {
     setSelectedPayout(payout);
     setOpenDialog(true);
   };
 
-  const handleProcessPayout = (id) => {
-    setPayouts(payouts.map(payout => 
-      payout.id === id ? { ...payout, status: "completed" } : payout
-    ));
-  };
-
   const handleCloseDialog = () => {
     setOpenDialog(false);
+    setSelectedPayout(null);
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(amount);
+  const handleProcessPayout = (id) => {
+    console.log("Process payout with ID:", id);
+    // Replace this with actual backend logic
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircleIcon color="success" />;
-      case "pending":
-        return <PendingIcon color="warning" />;
-      case "failed":
-        return <CheckCircleIcon color="error" />;
-      default:
-        return null;
-    }
-  };
-
-  const filteredPayouts = getFilteredPayouts();
+  const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
+  const totalCompleted = payouts.filter((p) => p.status === "completed").length;
+  const totalPending = payouts.filter((p) => p.status === "pending").length;
 
   return (
-    <Box m="1.5rem 2.5rem">
-      <Typography variant="h2" color="#333" fontWeight="bold" sx={{ mb: "5px" }}>
+    <Box p={2}>
+      <Typography variant="h5" gutterBottom>
         Payout Management
       </Typography>
-      <Typography variant="h5" color="#555" sx={{ mb: "20px" }}>
-        Process and monitor player payout requests
-      </Typography>
-      
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
+
+      <Grid container spacing={2} mb={2}>
+        <Grid item xs={12} sm={4}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Payouts</Typography>
-              <Typography variant="h3">{stats.totalPayouts}</Typography>
+              <Typography>Total Payouts</Typography>
+              <Typography variant="h6">{payouts.length}</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
+        <Grid item xs={12} sm={4}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" color="text.secondary">Total Amount</Typography>
-              <Typography variant="h3">{formatCurrency(stats.totalAmount)}</Typography>
+              <Typography>Total Amount</Typography>
+              <Typography variant="h6">{formatCurrency(totalAmount)}</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
+        <Grid item xs={12} sm={2}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" color="text.secondary">Completed</Typography>
-              <Typography variant="h3">{stats.completedPayouts}</Typography>
+              <Typography>Completed</Typography>
+              <Typography variant="h6">{totalCompleted}</Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ bgcolor: "#f5f5f5" }}>
+        <Grid item xs={12} sm={2}>
+          <Card>
             <CardContent>
-              <Typography variant="h6" color="text.secondary">Pending</Typography>
-              <Typography variant="h3">{stats.pendingPayouts}</Typography>
+              <Typography>Pending</Typography>
+              <Typography variant="h6">{totalPending}</Typography>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-      
-      {/* Filters */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+
+      <Grid container spacing={2} mb={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <TextField
+            label="Search"
             fullWidth
-            variant="outlined"
-            label="Search Players"
-            value={searchTerm}
-            onChange={handleSearchChange}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={2}>
@@ -232,12 +180,12 @@ const Payout = () => {
             <InputLabel>Status</InputLabel>
             <Select
               value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
               label="Status"
-              onChange={handleStatusFilterChange}
             >
-              <MenuItem value="all">All Statuses</MenuItem>
-              <MenuItem value="completed">Completed</MenuItem>
+              <MenuItem value="all">All</MenuItem>
               <MenuItem value="pending">Pending</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
               <MenuItem value="failed">Failed</MenuItem>
             </Select>
           </FormControl>
@@ -247,32 +195,32 @@ const Payout = () => {
             <InputLabel>Method</InputLabel>
             <Select
               value={methodFilter}
+              onChange={(e) => setMethodFilter(e.target.value)}
               label="Method"
-              onChange={handleMethodFilterChange}
             >
-              <MenuItem value="all">All Methods</MenuItem>
-              <MenuItem value="M-Pesa">M-Pesa</MenuItem>
-              <MenuItem value="Airtel Money">Airtel Money</MenuItem>
-              <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="paypal">PayPal</MenuItem>
+              <MenuItem value="bank">Bank</MenuItem>
+              <MenuItem value="crypto">Crypto</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={3}>
           <FormControl fullWidth>
             <InputLabel>Date Range</InputLabel>
             <Select
               value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
               label="Date Range"
-              onChange={handleDateFilterChange}
             >
-              <MenuItem value="all">All Dates</MenuItem>
+              <MenuItem value="all">All</MenuItem>
               <MenuItem value="today">Today</MenuItem>
               <MenuItem value="yesterday">Yesterday</MenuItem>
               <MenuItem value="thisWeek">This Week</MenuItem>
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} sm={6} md={2}>
+        <Grid item xs={12} sm={6} md={2} display="flex" alignItems="center">
           <FormControlLabel
             control={
               <Switch
@@ -282,170 +230,67 @@ const Payout = () => {
               />
             }
             label="Only Pending"
-            sx={{ mt: 1, ml: 1 }}
           />
         </Grid>
       </Grid>
-      
-      {/* Payouts Table */}
+
       <TableContainer component={Paper}>
         <Table>
-          <TableHead sx={{ backgroundColor: "#f0f0f0" }}>
+          <TableHead>
             <TableRow>
-              <TableCell>
-                <Box display="flex" alignItems="center">
-                  Player
-                  <IconButton size="small" onClick={() => handleSort('player')}>
-                    {sortConfig.key === 'player' && sortConfig.direction === 'asc' ? 
-                      <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
-                  </IconButton>
-                </Box>
+              <TableCell onClick={() => handleSort("player")} style={{ cursor: "pointer" }}>
+                Player {sortConfig.key === "player" ? (sortConfig.direction === "asc" ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />) : null}
               </TableCell>
-              <TableCell align="right">
-                <Box display="flex" alignItems="center" justifyContent="flex-end">
-                  Amount
-                  <IconButton size="small" onClick={() => handleSort('amount')}>
-                    {sortConfig.key === 'amount' && sortConfig.direction === 'asc' ? 
-                      <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
-                  </IconButton>
-                </Box>
-              </TableCell>
+              <TableCell>Amount</TableCell>
               <TableCell>Method</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>
-                <Box display="flex" alignItems="center">
-                  Date
-                  <IconButton size="small" onClick={() => handleSort('date')}>
-                    {sortConfig.key === 'date' && sortConfig.direction === 'asc' ? 
-                      <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />}
-                  </IconButton>
-                </Box>
+              <TableCell onClick={() => handleSort("createdAt")} style={{ cursor: "pointer" }}>
+                Date {sortConfig.key === "createdAt" ? (sortConfig.direction === "asc" ? <ArrowUpwardIcon fontSize="small" /> : <ArrowDownwardIcon fontSize="small" />) : null}
               </TableCell>
-              <TableCell align="center">Actions</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredPayouts.length > 0 ? (
-              filteredPayouts.map((payout) => (
-                <TableRow key={payout.id} hover>
-                  <TableCell>{payout.player}</TableCell>
-                  <TableCell align="right">{formatCurrency(payout.amount)}</TableCell>
-                  <TableCell>{payout.method}</TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      {getStatusIcon(payout.status)}
-                      <Typography sx={{ ml: 1 }}>{payout.status}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{payout.date}</TableCell>
-                  <TableCell align="center">
-                    <Button 
-                      variant="outlined" 
-                      size="small"
-                      onClick={() => handleViewDetails(payout)}
-                      sx={{ mr: 1 }}
-                    >
-                      Details
+            {filteredPayouts.map((payout) => (
+              <TableRow key={payout.id}>
+                <TableCell>{payout.player?.username || payout.player}</TableCell>
+                <TableCell>{formatCurrency(payout.amount)}</TableCell>
+                <TableCell>{payout.method}</TableCell>
+                <TableCell>{new Date(payout.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell>{getStatusIcon(payout.status)} {payout.status}</TableCell>
+                <TableCell>
+                  <Button size="small" onClick={() => handleViewDetails(payout)}>View</Button>
+                  {payout.status === "pending" && (
+                    <Button size="small" color="primary" onClick={() => handleProcessPayout(payout.id)}>
+                      Mark as Completed
                     </Button>
-                    {payout.status === "pending" && (
-                      <Button 
-                        variant="contained" 
-                        size="small"
-                        color="success"
-                        startIcon={<PaymentIcon />}
-                        onClick={() => handleProcessPayout(payout.id)}
-                      >
-                        Process
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} align="center">
-                  <Typography variant="body1" sx={{ py: 2 }}>
-                    No payouts found matching your filters
-                  </Typography>
+                  )}
                 </TableCell>
               </TableRow>
-            )}
+            ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      {/* Payout Details Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        {selectedPayout && (
-          <>
-            <DialogTitle>
-              Payout Details - {selectedPayout.transactionId}
-            </DialogTitle>
-            <DialogContent dividers>
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Player:</Typography>
-                  <Typography variant="body1">{selectedPayout.player}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Amount:</Typography>
-                  <Typography variant="body1" fontWeight="bold">
-                    {formatCurrency(selectedPayout.amount)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Payment Method:</Typography>
-                  <Typography variant="body1">{selectedPayout.method}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Status:</Typography>
-                  <Box display="flex" alignItems="center">
-                    {getStatusIcon(selectedPayout.status)}
-                    <Typography variant="body1" sx={{ ml: 1 }}>
-                      {selectedPayout.status}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Transaction ID:</Typography>
-                  <Typography variant="body1">{selectedPayout.transactionId}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Processed By:</Typography>
-                  <Typography variant="body1">{selectedPayout.processedBy}</Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="subtitle1">Date:</Typography>
-                  <Typography variant="body1">{selectedPayout.date}</Typography>
-                </Grid>
-                {selectedPayout.status === "failed" && (
-                  <Grid item xs={12}>
-                    <Typography variant="subtitle1">Failure Reason:</Typography>
-                    <Typography variant="body1" color="error.main">
-                      Insufficient funds in operator account
-                    </Typography>
-                  </Grid>
-                )}
-              </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseDialog}>Close</Button>
-              {selectedPayout.status === "pending" && (
-                <Button 
-                  variant="contained" 
-                  color="success"
-                  startIcon={<PaymentIcon />}
-                  onClick={() => {
-                    handleProcessPayout(selectedPayout.id);
-                    handleCloseDialog();
-                  }}
-                >
-                  Process Payout
-                </Button>
+      <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Payout Details</DialogTitle>
+        <DialogContent>
+          {selectedPayout && (
+            <>
+              <Typography><strong>Player:</strong> {selectedPayout.player?.username || selectedPayout.player}</Typography>
+              <Typography><strong>Amount:</strong> {formatCurrency(selectedPayout.amount)}</Typography>
+              <Typography><strong>Method:</strong> {selectedPayout.method}</Typography>
+              <Typography><strong>Status:</strong> {selectedPayout.status}</Typography>
+              <Typography><strong>Date:</strong> {new Date(selectedPayout.createdAt).toLocaleString()}</Typography>
+              {selectedPayout.note && (
+                <Typography><strong>Note:</strong> {selectedPayout.note}</Typography>
               )}
-            </DialogActions>
-          </>
-        )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Close</Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
