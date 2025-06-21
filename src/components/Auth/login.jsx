@@ -7,19 +7,15 @@ import {
   Link,
   Paper,
   Alert,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogActions
+  CircularProgress
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-const Login = ({ onSuccessRedirect = '/', forgotPasswordUrl, signupUrl }) => {
+const Login = ({ onSuccessRedirect = '/dashboard', forgotPasswordUrl, signupUrl }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [openSuccessDialog, setOpenSuccessDialog] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -29,18 +25,15 @@ const Login = ({ onSuccessRedirect = '/', forgotPasswordUrl, signupUrl }) => {
 
     setTimeout(() => {
       const savedUser = JSON.parse(localStorage.getItem('mockUser'));
+
       if (savedUser && savedUser.username === username && savedUser.password === password) {
-        setOpenSuccessDialog(true);
+        navigate(onSuccessRedirect); // automatic redirect to dashboard
       } else {
         setError('Invalid username or password.');
       }
+
       setIsLoading(false);
     }, 1000);
-  };
-
-  const handleDialogClose = () => {
-    setOpenSuccessDialog(false);
-    navigate(onSuccessRedirect);
   };
 
   return (
@@ -71,13 +64,6 @@ const Login = ({ onSuccessRedirect = '/', forgotPasswordUrl, signupUrl }) => {
           )}
         </Box>
       </Paper>
-
-      <Dialog open={openSuccessDialog} onClose={handleDialogClose}>
-        <DialogTitle>Login Successful!</DialogTitle>
-        <DialogActions>
-          <Button onClick={handleDialogClose} autoFocus>OK</Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 };
