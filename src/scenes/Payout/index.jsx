@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Grid,
@@ -31,10 +31,34 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HourglassBottomIcon from "@mui/icons-material/HourglassBottom";
 
-// import usePayout from '../../hooks/payouts'; 
-
 const Payout = () => {
-  const { payouts } = usePayouts();
+  const [payouts, setPayouts] = useState([
+    {
+      id: 1,
+      player: { username: "john_doe" },
+      amount: 150,
+      method: "paypal",
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      note: "Urgent payout",
+    },
+    {
+      id: 2,
+      player: { username: "jane_doe" },
+      amount: 200,
+      method: "bank",
+      status: "completed",
+      createdAt: new Date().toISOString(),
+    },
+    {
+      id: 3,
+      player: { username: "alice" },
+      amount: 300,
+      method: "crypto",
+      status: "failed",
+      createdAt: new Date().toISOString(),
+    },
+  ]);
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -116,9 +140,13 @@ const Payout = () => {
     setSelectedPayout(null);
   };
 
+  // ✅ Local state update: mark as completed
   const handleProcessPayout = (id) => {
-    console.log("Process payout with ID:", id);
-    // Replace this with actual backend logic
+    setPayouts((prev) =>
+      prev.map((payout) =>
+        payout.id === id ? { ...payout, status: "completed" } : payout
+      )
+    );
   };
 
   const totalAmount = payouts.reduce((sum, p) => sum + p.amount, 0);
