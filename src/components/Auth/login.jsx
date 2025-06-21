@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { apiFetch, setToken } from '../../service/api';
 
-const Login = () => {
+const Login = ({ loginPath, onSuccessRedirect, forgotPasswordUrl, signupUrl }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -29,26 +29,25 @@ const Login = () => {
     setError('');
 
     try {
-      const { token } = await apiFetch('/auth/login', {
+      const { token } = await apiFetch(loginPath, {
         method: 'POST',
         body: JSON.stringify({ username, password })
       });
       setToken(token);
-      // Optionally store admin info in localStorage or context
-      // localStorage.setItem('admin', JSON.stringify(admin));
       setOpenSuccessDialog(true);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Login failed. Please try again.');
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handle dialog close and navigate
   const handleDialogClose = () => {
     setOpenSuccessDialog(false);
-    navigate('/dashboard');
+    if (onSuccessRedirect) {
+      navigate(onSuccessRedirect);
+    }
   };
 
   return (
@@ -126,16 +125,19 @@ const Login = () => {
         </Box>
 
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between' }}>
-          <Link href="/forgot-password" underline="hover" color="inherit">
-            Forgot Password?
-          </Link>
-          <Link href="/signup" underline="hover" color="inherit">
-            Create Account
-          </Link>
+          {forgotPasswordUrl && (
+            <Link href={forgotPasswordUrl} underline="hover" color="inherit">
+              Forgot Password?
+            </Link>
+          )}
+          {signupUrl && (
+            <Link href={signupUrl} underline="hover" color="inherit">
+              Create Account
+            </Link>
+          )}
         </Box>
       </Paper>
 
-      {/* Success Dialog */}
       <Dialog open={openSuccessDialog} onClose={handleDialogClose}>
         <DialogTitle>Login Successful!</DialogTitle>
         <DialogActions>
