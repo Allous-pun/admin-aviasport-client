@@ -4,48 +4,66 @@ import {
   Box, Button, Typography, Alert, Link, Grid, Paper, Table,
   TableBody, TableCell, TableContainer, TableHead, TableRow
 } from "@mui/material";
-import { apiFetch, getToken } from '../../service/api';
 
 const Dashboard = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [stats, setStats] = useState({
-    totalBets: 0,
-    totalPayoutAmount: 0,
-    totalPlayers: 0,
-    totalFlights: 0,
-    totalPayouts: 0,
-    highestWin: 0
+    totalBets: 1200,
+    totalPayoutAmount: 250000,
+    totalPlayers: 320,
+    totalFlights: 85,
+    totalPayouts: 600,
+    highestWin: 54000
   });
+
   const [recentBets, setRecentBets] = useState([]);
   const [topPlayers, setTopPlayers] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!getToken()) {
-      navigate('/login');
-      return;
-    }
-    // Fetch dashboard stats from backend
-    apiFetch('/dashboard')
-      .then(data => {
-        setStats({
-          totalBets: data.totalBets,
-          totalPayoutAmount: data.totalPayoutAmount,
-          totalPlayers: data.totalPlayers,
-          totalFlights: data.totalFlights,
-          totalPayouts: data.totalPayouts,
-          highestWin: data.recentBets && data.recentBets.length > 0 ? Math.max(...data.recentBets.map(b => b.payout)) : 0
-        });
-        setRecentBets(data.recentBets || []);
-        setTopPlayers((data.topPlayers || []).map(tp => ({
-          player: tp.player.username || tp.player._id,
-          totalWins: tp.count,
-          totalPayout: tp.totalBet
-        })));
-      })
-      .catch(err => setErrorMessage(err.message));
+    // Simulate login check (remove in actual production)
+    // if (!getToken()) {
+    //   navigate('/login');
+    //   return;
+    // }
+
+    // Dummy data setup
+    const dummyRecentBets = [
+      {
+        _id: "1",
+        player: { username: "JohnDoe" },
+        amount: 500,
+        odds: 2.5,
+        payout: 1250,
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: "2",
+        player: { username: "JaneSmith" },
+        amount: 1000,
+        odds: 0,
+        payout: 0,
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: "3",
+        player: { username: "LuckyPlayer" },
+        amount: 200,
+        odds: 5,
+        payout: 1000,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    const dummyTopPlayers = [
+      { player: "JohnDoe", totalWins: 12, totalPayout: 14500 },
+      { player: "JaneSmith", totalWins: 9, totalPayout: 8800 },
+      { player: "LuckyPlayer", totalWins: 15, totalPayout: 21000 }
+    ];
+
+    setRecentBets(dummyRecentBets);
+    setTopPlayers(dummyTopPlayers);
   }, [navigate]);
 
   const formatCurrency = (amount) => {
